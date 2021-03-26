@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/jonaz/mgit/providers"
@@ -44,7 +45,7 @@ func main() {
 					if err != nil {
 						return err
 					}
-					return provider.Clone(c.String("whitelist"), c.String("has-file"))
+					return provider.Clone(strings.Split(c.String("whitelist"), ","), c.String("has-file"))
 				},
 				Flags: []cli.Flag{
 					&cli.StringFlag{
@@ -115,6 +116,22 @@ func main() {
 					&cli.StringFlag{
 						Name:  "file-regexp",
 						Usage: "regexp to filter files",
+					},
+				},
+			},
+			{
+				Name:  "playbook",
+				Usage: "run a playbook with combined commands",
+				Subcommands: []*cli.Command{
+					{
+						Name:   "run",
+						Usage:  "run a playbook with combined commands",
+						Action: playbook,
+					},
+					{
+						Name:   "generate",
+						Usage:  "generate a playbook of currently cloned repos",
+						Action: generatePlaybook,
 					},
 				},
 			},

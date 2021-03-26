@@ -3,6 +3,7 @@ package models
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 )
 
 type Repos struct {
@@ -45,7 +46,7 @@ type Repo struct {
 }
 
 func (r Repo) RepoPath(dst string) string {
-	return filepath.Join(dst, fmt.Sprintf("%s_%s", r.Project.Key, r.Slug))
+	return filepath.Join(dst, fmt.Sprintf("%s_%s", strings.ToLower(r.Project.Key), r.Slug))
 }
 
 type CloneLinks []struct {

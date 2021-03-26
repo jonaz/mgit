@@ -12,6 +12,10 @@ type Repo struct {
 	workdir string
 }
 
+func NewRepo(dir string) Repo {
+	return Repo{workdir: dir}
+}
+
 func (repo Repo) WorkDir() string {
 	return repo.workdir
 }

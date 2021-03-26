@@ -15,7 +15,7 @@ import (
 var ErrNoProviderFound = fmt.Errorf("no provider found")
 
 type Provider interface {
-	Clone(whitelist, hasFile string) error
+	Clone(whitelist []string, hasFile string) error
 	Git(args []string) error
 	PR() error
 	Replace(regexp, with, fileRegexp string) error

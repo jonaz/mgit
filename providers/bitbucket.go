@@ -25,7 +25,7 @@ func NewBitbucket(dir, url string) *Bitbucket {
 	}
 }
 
-func (b *Bitbucket) Clone(whitelist, hasFile string) error {
+func (b *Bitbucket) Clone(whitelist []string, hasFile string) error {
 	username, password, err := utils.Credentials()
 	if err != nil {
 		return err
@@ -51,9 +51,8 @@ func (b *Bitbucket) Clone(whitelist, hasFile string) error {
 		}
 
 		for _, repo := range repos.Values {
-			if whitelist != "" {
-				s := strings.Split(whitelist, ",")
-				if !utils.InSlice(s, repo.Name) {
+			if len(whitelist) > 0 {
+				if !utils.InSlice(whitelist, repo.Name) {
 					logrus.Debugf("skipping repo %s", repo.Slug)
 					continue
 				}
