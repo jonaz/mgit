@@ -56,7 +56,7 @@ func (d *DefaultProvider) Replace(regex, with, fileRegex string) error {
 	reg, _ := regexp.Compile(regex)
 	fileReg, _ := regexp.Compile(fileRegex)
 	return utils.InEachRepo(d.Dir, func(path string) error {
-		logrus.Info(path)
+		logrus.Infof("scanning repo for replace: %s", path)
 
 		return filepath.Walk(path, func(path string, info fs.FileInfo, err error) error {
 			if err != nil {
@@ -87,6 +87,7 @@ func (d *DefaultProvider) Replace(regex, with, fileRegex string) error {
 				return nil
 			}
 
+			logrus.Infof("found file to replace in: %s", path)
 			newContent := reg.ReplaceAll(read, []byte(with))
 			err = ioutil.WriteFile(path, newContent, info.Mode())
 			if err != nil {

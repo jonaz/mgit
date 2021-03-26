@@ -22,7 +22,7 @@ func main() {
 			&cli.StringFlag{
 				Name:    "bitbucket-url",
 				Value:   "",
-				Usage:   "regexp kubectl context name",
+				Usage:   "url to bitbucket server",
 				Aliases: []string{"c"},
 			},
 			&cli.StringFlag{
