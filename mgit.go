@@ -4,15 +4,16 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
-	"github.com/jonaz/mgit/config"
-	"github.com/jonaz/mgit/service"
-	"github.com/jonaz/mgit/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
 
 func main() {
+	logrus.SetOutput(os.Stderr)
+	logrus.SetFormatter(&logrus.TextFormatter{TimestampFormat: time.RFC3339Nano, FullTimestamp: true})
+
 	app := &cli.App{
 		Name:  "mkubectl",
 		Usage: "run kubectl command in multiple contexts",
@@ -24,10 +25,9 @@ func main() {
 				Aliases: []string{"c"},
 			},
 			&cli.StringFlag{
-				Name:    "namespace",
-				Value:   "",
-				Usage:   "kubectl namespace",
-				Aliases: []string{"n"},
+				Name:  "dir",
+				Value: ".",
+				Usage: "temporary working directory for all the git repos",
 			},
 			&cli.StringFlag{
 				Name:  "loglevel",
@@ -38,11 +38,60 @@ func main() {
 			{
 				Name:   "clone",
 				Usage:  "clone all repos and make sure they are up to date",
-				Action: clone,
+				Action: multiClone,
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:  "has-file",
 						Usage: "only clone repo which has file",
+					},
+
+					&cli.StringFlag{
+						Name:  "whitelist",
+						Usage: "only clone repos in comma separated list",
+					},
+				},
+			},
+			{
+				Name:    "pull-request",
+				Aliases: []string{"pr"},
+				Usage:   "multip PR open",
+				Action:  multiPR,
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "has-file",
+						Usage: "only clone repo which has file",
+					},
+
+					&cli.StringFlag{
+						Name:  "whitelist",
+						Usage: "only clone repos in comma separated list",
+					},
+				},
+			},
+			{
+				Name:    "git",
+				Aliases: []string{"pr"},
+				Usage:   "run git commands in multiple repos",
+				Action:  multiGit,
+			},
+
+			{
+				Name:    "replace",
+				Aliases: []string{"pr"},
+				Usage:   "replace text in multiple repos",
+				Action:  multiReplace,
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "with",
+						Usage: "content to replace that line with",
+					},
+					&cli.StringFlag{
+						Name:  "regexp",
+						Usage: "regexp to find a line in file",
+					},
+					&cli.StringFlag{
+						Name:  "file-regexp",
+						Usage: "regexp to filter files",
 					},
 				},
 			},
@@ -54,47 +103,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-}
-
-func clone(c *cli.Context) error {
-	username, password, err := utils.Credentials()
-	if err != nil {
-		return err
-	}
-
-	config := config.Config{
-		BitbucketURL:      c.String("bitbucket-url"),
-		BitbucketUser:     username,
-		BitbucketPassword: password,
-	}
-	bit := service.NewBitbucket(config)
-
-	projects, err := bit.ListProjects()
-	if err != nil {
-		return err
-	}
-
-	for _, project := range projects.Values {
-		repos, err := bit.ListRepos(project.Key)
-		if err != nil {
-			logrus.Error(err)
-			continue
-		}
-
-		for _, repo := range repos.Values {
-			fmt.Println(repo.Links.Clone)
-			files, err := bit.ListFiles(project.Key, repo.Slug)
-			if err != nil {
-				logrus.Error(err)
-				continue
-			}
-			for _, file := range files.Values {
-				fmt.Println(file)
-			}
-		}
-	}
-
-	return nil
 }
 
 func globalBefore(c *cli.Context) error {

@@ -22,14 +22,14 @@ func NewBitbucket(config config.Config) *Bitbucket {
 }
 
 func (b *Bitbucket) ListProjects() (models.Projects, error) {
-	u := "rest/api/1.0/projects/"
+	u := "rest/api/1.0/projects/?limit=1000"
 	projects := models.Projects{}
 	err := b.do("GET", u, nil, &projects)
 	return projects, err
 }
 
 func (b *Bitbucket) ListRepos(projectKey string) (models.Repos, error) {
-	u := fmt.Sprintf("rest/api/1.0/projects/%s/repos/", projectKey)
+	u := fmt.Sprintf("rest/api/1.0/projects/%s/repos/?limit=5000", projectKey)
 	repos := models.Repos{}
 	err := b.do("GET", u, nil, &repos)
 	return repos, err
@@ -77,7 +77,7 @@ func (b *Bitbucket) do(method, uri string, body io.Reader, response interface{})
 		errorResponse := &ErrorResponse{}
 		err := decoder.Decode(errorResponse)
 		if err != nil {
-			return err
+			return fmt.Errorf("got status code %d: %w", resp.StatusCode, err)
 		}
 		return errorResponse
 	}
