@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/jonaz/mgit/providers"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
@@ -15,8 +16,8 @@ func main() {
 	logrus.SetFormatter(&logrus.TextFormatter{TimestampFormat: time.RFC3339Nano, FullTimestamp: true})
 
 	app := &cli.App{
-		Name:  "mkubectl",
-		Usage: "run kubectl command in multiple contexts",
+		Name:  "mgit",
+		Usage: "manage multiple git repos at the same time",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "bitbucket-url",
@@ -36,9 +37,15 @@ func main() {
 		},
 		Commands: []*cli.Command{
 			{
-				Name:   "clone",
-				Usage:  "clone all repos and make sure they are up to date",
-				Action: multiClone,
+				Name:  "clone",
+				Usage: "clone all repos and make sure they are up to date",
+				Action: func(c *cli.Context) error {
+					provider, err := providers.GetProvider(c)
+					if err != nil {
+						return err
+					}
+					return provider.Clone(c.String("whitelist"), c.String("has-file"))
+				},
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:  "has-file",
@@ -55,7 +62,13 @@ func main() {
 				Name:    "pull-request",
 				Aliases: []string{"pr"},
 				Usage:   "multip PR open",
-				Action:  multiPR,
+				Action: func(c *cli.Context) error {
+					provider, err := providers.GetProvider(c)
+					if err != nil {
+						return err
+					}
+					return provider.PR()
+				},
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:  "has-file",
@@ -69,17 +82,27 @@ func main() {
 				},
 			},
 			{
-				Name:    "git",
-				Aliases: []string{"pr"},
-				Usage:   "run git commands in multiple repos",
-				Action:  multiGit,
+				Name:  "git",
+				Usage: "run git commands in multiple repos",
+				Action: func(c *cli.Context) error {
+					provider, err := providers.GetProvider(c)
+					if err != nil {
+						return err
+					}
+					return provider.Git(c.Args().Slice())
+				},
 			},
 
 			{
-				Name:    "replace",
-				Aliases: []string{"pr"},
-				Usage:   "replace text in multiple repos",
-				Action:  multiReplace,
+				Name:  "replace",
+				Usage: "replace text in multiple repos",
+				Action: func(c *cli.Context) error {
+					provider, err := providers.GetProvider(c)
+					if err != nil {
+						return err
+					}
+					return provider.Replace(c.String("regexp"), c.String("with"), c.String("file-regexp"))
+				},
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:  "with",
