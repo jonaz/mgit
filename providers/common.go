@@ -53,8 +53,16 @@ func (d *DefaultProvider) Replace(regex, with, fileRegex string) error {
 		return fmt.Errorf("missing --regexp flag to find what to replace")
 	}
 
-	reg, _ := regexp.Compile(regex)
-	fileReg, _ := regexp.Compile(fileRegex)
+	reg, err := regexp.Compile(regex)
+	if err != nil {
+		return err
+	}
+
+	fileReg, err := regexp.Compile(fileRegex)
+	if err != nil {
+		return err
+	}
+
 	return utils.InEachRepo(d.Dir, func(path string) error {
 		logrus.Infof("scanning repo for replace: %s", path)
 
