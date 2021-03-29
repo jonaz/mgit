@@ -127,6 +127,12 @@ func main() {
 						Name:   "run",
 						Usage:  "run a playbook with combined commands",
 						Action: playbook,
+						Flags: []cli.Flag{
+							&cli.BoolFlag{
+								Name:  "force",
+								Usage: "force push new git branch",
+							},
+						},
 					},
 					{
 						Name:   "generate",

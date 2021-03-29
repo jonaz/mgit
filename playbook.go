@@ -30,12 +30,11 @@ func generatePlaybook(c *cli.Context) error {
 			},
 		}}
 	err := utils.InEachRepo(c.String("dir"), func(path string) error {
-		origin, err := utils.Run("git", "-C", path, "config", "--get", "remote.origin.url")
+		r := git.NewRepo(path)
+		origin, err := r.RemoteURL()
 		if err != nil {
 			return err
 		}
-		origin = strings.TrimSpace(origin)
-
 		p.Tasks[0].Repos = append(p.Tasks[0].Repos, origin)
 
 		return nil
@@ -67,11 +66,8 @@ func playbook(c *cli.Context) error {
 
 	for _, task := range p.Tasks {
 		for _, repoURL := range task.Repos {
-			tmp := strings.Split(repoURL, "/")
-			dir := filepath.Join(c.String("dir"), tmp[len(tmp)-2]+"_"+tmp[len(tmp)-1])
-			dir = strings.TrimSuffix(dir, ".git")
+			dir := repoDir(c.String("dir"), repoURL)
 			logrus.Debugf("will clone into %s", dir)
-
 			if _, err := os.Stat(dir); errors.Is(err, os.ErrNotExist) {
 				_, err := git.Clone(repoURL, dir)
 				if err != nil {
@@ -96,7 +92,47 @@ func playbook(c *cli.Context) error {
 				continue
 			}
 		}
+
+		err = utils.InEachRepo(c.String("dir"), func(path string) error {
+			r := git.NewRepo(path)
+			origin, err := r.RemoteURL()
+			if err != nil {
+				return err
+			}
+
+			if !utils.InSlice(task.Repos, origin) {
+				return nil
+			}
+
+			// make sure we have not already made a commit TODO
+
+			err = r.Checkout(task.TargetBranch)
+			if err != nil {
+				return err
+			}
+
+			err = r.CommitAndPush(task.CommitMessage, "")
+			if err != nil {
+				return err
+			}
+			err = r.Push(origin, c.Bool("force"))
+			if err != nil {
+				return err
+			}
+
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+
 	}
 
 	return nil
+}
+
+func repoDir(workDir, repoURL string) string {
+	tmp := strings.Split(repoURL, "/")
+	dir := filepath.Join(workDir, tmp[len(tmp)-2]+"_"+tmp[len(tmp)-1])
+	return strings.TrimSuffix(dir, ".git")
 }

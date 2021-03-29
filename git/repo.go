@@ -30,6 +30,10 @@ func Clone(repo, dstFolder string) (Repo, error) {
 	return Repo{workdir: dstFolder}, err
 }
 
+func (repo Repo) RemoteURL() (string, error) {
+	origin, err := utils.Run("git", "-C", repo.workdir, "config", "--get", "remote.origin.url")
+	return strings.TrimSpace(origin), err
+}
 func (repo Repo) Add(file string) error {
 	out, err := utils.Run("git", "-C", repo.workdir, "add", file)
 	if out != "" {
@@ -38,25 +42,8 @@ func (repo Repo) Add(file string) error {
 	return err
 }
 
-func (repo Repo) HasLocalChanges() (bool, error) {
-	out, err := utils.Run("git", "-C", repo.workdir, "status", "--porcelain")
-	return out != "", err
-}
-
-func (repo Repo) CommitAndPushIfLocalChanges(msg, author, upstreamURL string) error {
-	localChanges, err := repo.HasLocalChanges()
-	if err != nil {
-		return err
-	}
-	if !localChanges {
-		logrus.Debug("skipping commit and push since repo is already up to date")
-		return nil
-	}
-	return repo.CommitAndPush(msg, author, upstreamURL)
-}
-
-func (repo Repo) CommitAndPush(msg, author, upstreamURL string) error {
-	logrus.Infof("commit and push in %s to %s", repo.workdir, upstreamURL)
+func (repo Repo) CommitAndPush(msg, author string) error {
+	logrus.Infof("commit in %s", repo.workdir)
 	var out string
 	var err error
 
@@ -68,22 +55,6 @@ func (repo Repo) CommitAndPush(msg, author, upstreamURL string) error {
 	if strings.TrimSpace(out) != "" {
 		fmt.Println(out)
 	}
-	if err != nil {
-		return err
-	}
-
-	err = repo.Push(upstreamURL)
-
-	if err != nil && strings.Contains(err.Error(), "Updates were rejected because the remote contains work that you do") {
-		logrus.Error(err)
-		logrus.Info(`push failed because "Updates were rejected because the remote contains work that you do". We will do a pull and then try the push again. `)
-		err = repo.Pull()
-		if err != nil {
-			return err
-		}
-		return repo.Push(upstreamURL)
-	}
-
 	return err
 }
 
@@ -95,10 +66,37 @@ func (repo Repo) Pull() error {
 	return err
 }
 
-func (repo Repo) Push(upstreamURL string) error {
-	out, err := utils.Run("git", "-C", repo.workdir, "push", upstreamURL)
-	if strings.TrimSpace(out) != "" {
-		fmt.Println(out)
+func (repo Repo) Push(upstreamURL string, force bool) error {
+	logrus.Infof("push in %s to %s ", repo.workdir, upstreamURL)
+	var err error
+	if force {
+		_, err = utils.Run("git", "-C", repo.workdir, "push", "--force", upstreamURL)
+	} else {
+		_, err = utils.Run("git", "-C", repo.workdir, "push", upstreamURL)
 	}
 	return err
 }
+
+func (repo Repo) Checkout(branch string) error {
+	_, err := utils.Run("git", "-C", repo.workdir, "checkout", "-B", branch)
+	return err
+}
+
+/*
+func (repo Repo) CurrentBranch() (string, error) {
+	out, err := utils.Run("git", "-C", repo.workdir, "symbolic-ref", "--short", "HEAD")
+	return strings.TrimSpace(out), err
+}
+
+func (repo Repo) TrackPush(upstreamURL string) error {
+	//git push --set-upstream origin `git symbolic-ref --short HEAD`
+
+	branchName, err := repo.CurrentBranch()
+	if err != nil {
+		return err
+	}
+
+	_, err = utils.Run("git", "-C", repo.workdir, "push", "--set-upstream", "origin", branchName, upstreamURL)
+	return err
+}
+*/
