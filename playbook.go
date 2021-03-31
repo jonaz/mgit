@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -16,19 +17,20 @@ import (
 )
 
 func generatePlaybook(c *cli.Context) error {
-
 	p := &models.Playbook{
 		Tasks: []models.Task{
 			models.Task{
-				Replace: []models.Replace{
+				Actions: []models.Action{
 					{
+						Command:    "",
 						Regexp:     "",
 						With:       "",
 						FileRegexp: "",
 					},
 				},
 			},
-		}}
+		},
+	}
 	err := utils.InEachRepo(c.String("dir"), func(path string) error {
 		r := git.NewRepo(path)
 		origin, err := r.RemoteURL()
@@ -74,7 +76,6 @@ func runPlaybook(c *cli.Context) error {
 			} else {
 				r := git.NewRepo(dir)
 				err := r.Pull()
-
 				if err != nil {
 					logrus.Error(err)
 				}
@@ -83,11 +84,10 @@ func runPlaybook(c *cli.Context) error {
 			provider.RepoURLWhitelist = append(provider.RepoURLWhitelist, repoURL)
 		}
 
-		for _, rep := range task.Replace {
-			err := provider.Replace(rep.Regexp, rep.With, rep.FileRegexp)
+		for _, a := range task.Actions {
+			err := runAction(provider, a)
 			if err != nil {
-				logrus.Error(err)
-				continue
+				return err
 			}
 		}
 
@@ -120,9 +120,8 @@ func runPlaybook(c *cli.Context) error {
 	return nil
 }
 
-func eachRepoInPlay(provider *providers.DefaultProvider, cb func(repo git.Repo) error) error {
-
-	return utils.InEachRepo(provider.Dir, func(path string) error {
+func eachRepoInPlay(provider providers.Provider, cb func(repo git.Repo) error) error {
+	return utils.InEachRepo(provider.WorkDir(), func(path string) error {
 		ok, err := provider.ShouldProcessRepo(path)
 		if err != nil {
 			return err
@@ -142,4 +141,29 @@ func repoDir(workDir, repoURL string) string {
 	tmp := strings.Split(repoURL, "/")
 	dir := filepath.Join(workDir, tmp[len(tmp)-2]+"_"+tmp[len(tmp)-1])
 	return strings.TrimSuffix(dir, ".git")
+}
+
+func runAction(provider providers.Provider, action models.Action) error {
+	if action.Regexp != "" && action.Command == "" {
+		err := provider.Replace(action.Regexp, action.With, action.FileRegexp)
+		if err != nil {
+			return err
+		}
+	}
+	if action.Regexp == "" && action.Command != "" {
+		err := eachRepoInPlay(provider, func(repo git.Repo) error {
+			logrus.Infof("running command: %s", action.Command)
+			args := strings.Fields(action.Command)
+			cmd := exec.Command(args[0], args[1:]...) // #nosec
+			cmd.Dir = repo.WorkDir()
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			cmd.Stdin = os.Stdin
+			return cmd.Run()
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

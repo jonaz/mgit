@@ -20,6 +20,8 @@ type Provider interface {
 	Git(args []string) error
 	PR() error
 	Replace(regexp, with, fileRegexp string) error
+	ShouldProcessRepo(path string) (bool, error)
+	WorkDir() string
 }
 
 func GetProvider(c *cli.Context) (Provider, error) {
@@ -30,12 +32,24 @@ func GetProvider(c *cli.Context) (Provider, error) {
 		), nil
 	}
 
-	return nil, ErrNoProviderFound
+	return &DefaultProvider{Dir: c.String("dir")}, nil
 }
 
 type DefaultProvider struct {
 	Dir              string
 	RepoURLWhitelist []string
+}
+
+func (d *DefaultProvider) WorkDir() string {
+	return d.Dir
+}
+
+func (d *DefaultProvider) Clone(whitelist []string, hasFile string) error {
+	return fmt.Errorf("clone is not defined in this provider. Set --<provider>-url flag")
+}
+
+func (d *DefaultProvider) PR() error {
+	return fmt.Errorf("prd is not defined in this provider. Set --<provider>-url flag")
 }
 
 func (d *DefaultProvider) ShouldProcessRepo(path string) (bool, error) {

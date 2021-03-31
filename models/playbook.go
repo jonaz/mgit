@@ -5,14 +5,15 @@ type Playbook struct {
 }
 
 type Task struct {
-	Name          string    `yaml:"name"`
-	Repos         []string  `yaml:"repos"`
-	Replace       []Replace `yaml:"replace"`
-	CommitMessage string    `yaml:"commitMessage"`
-	TargetBranch  string    `yaml:"targetBranch"`
+	Name          string   `yaml:"name"`
+	Repos         []string `yaml:"repos"`
+	Actions       []Action `yaml:"actions"`
+	CommitMessage string   `yaml:"commitMessage"`
+	TargetBranch  string   `yaml:"targetBranch"`
 }
 
-type Replace struct {
+type Action struct {
+	Command    string `yaml:"command"`
 	Regexp     string `yaml:"regexp"`
 	With       string `yaml:"with"`
 	FileRegexp string `yaml:"fileRegexp"`

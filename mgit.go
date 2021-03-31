@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jonaz/mgit/models"
 	"github.com/jonaz/mgit/providers"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -62,7 +63,7 @@ func main() {
 			{
 				Name:    "pull-request",
 				Aliases: []string{"pr"},
-				Usage:   "multip PR open",
+				Usage:   "multip PR open. Each PR will be opened in a new browser tab",
 				Action: func(c *cli.Context) error {
 					provider, err := providers.GetProvider(c)
 					if err != nil {
@@ -117,6 +118,17 @@ func main() {
 						Name:  "file-regexp",
 						Usage: "regexp to filter files",
 					},
+				},
+			},
+			{
+				Name:  "command",
+				Usage: "run command in multiple repos",
+				Action: func(c *cli.Context) error {
+					provider, err := providers.GetProvider(c)
+					if err != nil {
+						return err
+					}
+					return runAction(provider, models.Action{Command: strings.Join(c.Args().Slice(), " ")})
 				},
 			},
 			{

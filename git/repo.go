@@ -34,6 +34,7 @@ func (repo Repo) RemoteURL() (string, error) {
 	origin, err := utils.Run("git", "-C", repo.workdir, "config", "--get", "remote.origin.url")
 	return strings.TrimSpace(origin), err
 }
+
 func (repo Repo) Add(file string) error {
 	out, err := utils.Run("git", "-C", repo.workdir, "add", file)
 	if out != "" {
