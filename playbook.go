@@ -46,7 +46,7 @@ func generatePlaybook(c *cli.Context) error {
 	return yaml.NewEncoder(os.Stdout).Encode(p)
 }
 
-func playbook(c *cli.Context) error {
+func runPlaybook(c *cli.Context) error {
 	file, err := os.Open(c.Args().First())
 	if err != nil {
 		return err
@@ -59,12 +59,9 @@ func playbook(c *cli.Context) error {
 		return err
 	}
 
-	provider, err := providers.GetProvider(c)
-	if err != nil {
-		return err
-	}
-
 	for _, task := range p.Tasks {
+		provider := &providers.DefaultProvider{Dir: c.String("dir")}
+
 		for _, repoURL := range task.Repos {
 			dir := repoDir(c.String("dir"), repoURL)
 			logrus.Debugf("will clone into %s", dir)
@@ -80,9 +77,10 @@ func playbook(c *cli.Context) error {
 
 				if err != nil {
 					logrus.Error(err)
-					continue
 				}
 			}
+
+			provider.RepoURLWhitelist = append(provider.RepoURLWhitelist, repoURL)
 		}
 
 		for _, rep := range task.Replace {
@@ -93,42 +91,51 @@ func playbook(c *cli.Context) error {
 			}
 		}
 
-		err = utils.InEachRepo(c.String("dir"), func(path string) error {
-			r := git.NewRepo(path)
-			origin, err := r.RemoteURL()
-			if err != nil {
-				return err
-			}
-
-			if !utils.InSlice(task.Repos, origin) {
-				return nil
-			}
-
-			// make sure we have not already made a commit TODO
-
-			err = r.Checkout(task.TargetBranch)
-			if err != nil {
-				return err
-			}
-
-			err = r.CommitAndPush(task.CommitMessage, "")
-			if err != nil {
-				return err
-			}
-			err = r.Push(origin, c.Bool("force"))
-			if err != nil {
-				return err
-			}
-
-			return nil
+		err = eachRepoInPlay(provider, func(repo git.Repo) error {
+			return repo.Checkout(task.TargetBranch)
 		})
 		if err != nil {
 			return err
 		}
 
+		err = eachRepoInPlay(provider, func(repo git.Repo) error {
+			return repo.CommitAndPush(task.CommitMessage, "")
+		})
+		if err != nil {
+			return err
+		}
+
+		err = eachRepoInPlay(provider, func(repo git.Repo) error {
+			repoURL, err := repo.RemoteURL()
+			if err != nil {
+				return err
+			}
+			return repo.Push(repoURL, c.Bool("force"))
+		})
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
+}
+
+func eachRepoInPlay(provider *providers.DefaultProvider, cb func(repo git.Repo) error) error {
+
+	return utils.InEachRepo(provider.Dir, func(path string) error {
+		ok, err := provider.ShouldProcessRepo(path)
+		if err != nil {
+			return err
+		}
+
+		if !ok {
+			return nil
+		}
+
+		r := git.NewRepo(path)
+
+		return cb(r)
+	})
 }
 
 func repoDir(workDir, repoURL string) string {

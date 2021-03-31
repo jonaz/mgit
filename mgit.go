@@ -126,7 +126,7 @@ func main() {
 					{
 						Name:   "run",
 						Usage:  "run a playbook with combined commands",
-						Action: playbook,
+						Action: runPlaybook,
 						Flags: []cli.Flag{
 							&cli.BoolFlag{
 								Name:  "force",

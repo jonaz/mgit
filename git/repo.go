@@ -82,11 +82,12 @@ func (repo Repo) Checkout(branch string) error {
 	return err
 }
 
-/*
 func (repo Repo) CurrentBranch() (string, error) {
 	out, err := utils.Run("git", "-C", repo.workdir, "symbolic-ref", "--short", "HEAD")
 	return strings.TrimSpace(out), err
 }
+
+/*
 
 func (repo Repo) TrackPush(upstreamURL string) error {
 	//git push --set-upstream origin `git symbolic-ref --short HEAD`

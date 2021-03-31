@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 
+	"github.com/jonaz/mgit/git"
 	"github.com/jonaz/mgit/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -33,11 +34,30 @@ func GetProvider(c *cli.Context) (Provider, error) {
 }
 
 type DefaultProvider struct {
-	Dir string
+	Dir              string
+	RepoURLWhitelist []string
+}
+
+func (d *DefaultProvider) ShouldProcessRepo(path string) (bool, error) {
+	if len(d.RepoURLWhitelist) == 0 {
+		return true, nil
+	}
+	r := git.NewRepo(path)
+	origin, err := r.RemoteURL()
+	if err != nil {
+		return false, err
+	}
+	return utils.InSlice(d.RepoURLWhitelist, origin), nil
 }
 
 func (d *DefaultProvider) Git(gitArgs []string) error {
 	return utils.InEachRepo(d.Dir, func(path string) error {
+		if ok, err := d.ShouldProcessRepo(path); !ok {
+			if err != nil {
+				return err
+			}
+			return nil
+		}
 		logrus.Info(path)
 		args := []string{"-C", path}
 		args = append(args, gitArgs...)
@@ -64,6 +84,12 @@ func (d *DefaultProvider) Replace(regex, with, fileRegex string) error {
 	}
 
 	return utils.InEachRepo(d.Dir, func(path string) error {
+		if ok, err := d.ShouldProcessRepo(path); !ok {
+			if err != nil {
+				return err
+			}
+			return nil
+		}
 		logrus.Infof("scanning repo for replace: %s", path)
 
 		return filepath.Walk(path, func(path string, info fs.FileInfo, err error) error {
