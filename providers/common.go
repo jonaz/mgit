@@ -143,7 +143,7 @@ func (d *DefaultProvider) Replace(regex, with, fileRegex, pathRegex string, cont
 				}
 			}
 			if pathRegex != "" {
-				if !pathReg.MatchString(info.Name()) {
+				if !pathReg.MatchString(path) {
 					return nil
 				}
 			}
