@@ -62,11 +62,12 @@ func runPlaybook(c *cli.Context) error {
 	}
 
 	for _, task := range p.Tasks {
+		task := task
 		provider := &providers.DefaultProvider{Dir: c.String("dir")}
 
 		for _, repoURL := range task.Repos {
 			dir := repoDir(c.String("dir"), repoURL)
-			logrus.Debugf("will clone into %s", dir)
+			logrus.Infof("clone %s into %s", repoURL, dir)
 			if _, err := os.Stat(dir); errors.Is(err, os.ErrNotExist) {
 				_, err := git.Clone(repoURL, dir)
 				if err != nil {
@@ -92,6 +93,7 @@ func runPlaybook(c *cli.Context) error {
 		}
 
 		err = eachRepoInPlay(provider, func(repo git.Repo) error {
+			logrus.Infof("%s: create branch %s", repo.WorkDir(), task.TargetBranch)
 			return repo.Checkout(task.TargetBranch)
 		})
 		if err != nil {
@@ -99,7 +101,8 @@ func runPlaybook(c *cli.Context) error {
 		}
 
 		err = eachRepoInPlay(provider, func(repo git.Repo) error {
-			return repo.CommitAndPush(task.CommitMessage, "")
+			logrus.Infof("%s: commit %s", repo.WorkDir(), task.TargetBranch)
+			return repo.Commit(task.CommitMessage, "")
 		})
 		if err != nil {
 			return err
@@ -110,6 +113,7 @@ func runPlaybook(c *cli.Context) error {
 			if err != nil {
 				return err
 			}
+			logrus.Infof("%s: push %s", repo.WorkDir(), repoURL)
 			return repo.Push(repoURL, c.Bool("force"))
 		})
 		if err != nil {
@@ -145,14 +149,14 @@ func repoDir(workDir, repoURL string) string {
 
 func runAction(provider providers.Provider, action models.Action) error {
 	if action.Regexp != "" && action.Command == "" {
-		err := provider.Replace(action.Regexp, action.With, action.FileRegexp)
+		err := provider.Replace(action.Regexp, action.With, action.FileRegexp, action.PathRegexp, action.ContentRegexp)
 		if err != nil {
 			return err
 		}
 	}
 	if action.Regexp == "" && action.Command != "" {
 		err := eachRepoInPlay(provider, func(repo git.Repo) error {
-			logrus.Infof("running command: %s", action.Command)
+			logrus.Infof("%s: running command: %s", repo.WorkDir(), action.Command)
 			args := strings.Fields(action.Command)
 			cmd := exec.Command(args[0], args[1:]...) // #nosec
 			cmd.Dir = repo.WorkDir()

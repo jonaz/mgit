@@ -19,7 +19,7 @@ type Provider interface {
 	Clone(whitelist []string, hasFile string) error
 	Git(args []string) error
 	PR() error
-	Replace(regexp, with, fileRegexp string) error
+	Replace(regexp, with, fileRegexp, pathRegex string, contentRegex []string) error
 	ShouldProcessRepo(path string) (bool, error)
 	WorkDir() string
 }
@@ -79,12 +79,17 @@ func (d *DefaultProvider) Git(gitArgs []string) error {
 	})
 }
 
-func (d *DefaultProvider) Replace(regex, with, fileRegex string) error {
+var (
+	ErrMissingWithFlag   = fmt.Errorf("missing --with flag to replace with")
+	ErrMissingRegexpFlag = fmt.Errorf("missing --regexp flag to find what to replace")
+)
+
+func (d *DefaultProvider) Replace(regex, with, fileRegex, pathRegex string, contentRegex []string) error {
 	if with == "" {
-		return fmt.Errorf("missing --with flag to replace with")
+		return ErrMissingWithFlag
 	}
 	if regex == "" {
-		return fmt.Errorf("missing --regexp flag to find what to replace")
+		return ErrMissingRegexpFlag
 	}
 
 	reg, err := regexp.Compile(regex)
@@ -95,6 +100,19 @@ func (d *DefaultProvider) Replace(regex, with, fileRegex string) error {
 	fileReg, err := regexp.Compile(fileRegex)
 	if err != nil {
 		return err
+	}
+	pathReg, err := regexp.Compile(pathRegex)
+	if err != nil {
+		return err
+	}
+
+	contentReg := make([]*regexp.Regexp, len(contentRegex))
+	for i, s := range contentRegex {
+		reg, err := regexp.Compile(s)
+		if err != nil {
+			return err
+		}
+		contentReg[i] = reg
 	}
 
 	return utils.InEachRepo(d.Dir, func(path string) error {
@@ -124,11 +142,22 @@ func (d *DefaultProvider) Replace(regex, with, fileRegex string) error {
 					return nil
 				}
 			}
+			if pathRegex != "" {
+				if !pathReg.MatchString(info.Name()) {
+					return nil
+				}
+			}
 
 			logrus.Debugf("checking path %s for matching regexp", path)
 			read, err := ioutil.ReadFile(path)
 			if err != nil {
 				return err
+			}
+
+			for _, reg := range contentReg {
+				if !reg.Match(read) {
+					return nil
+				}
 			}
 
 			if !reg.Match(read) {
@@ -139,7 +168,7 @@ func (d *DefaultProvider) Replace(regex, with, fileRegex string) error {
 			newContent := reg.ReplaceAll(read, []byte(with))
 			err = ioutil.WriteFile(path, newContent, info.Mode())
 			if err != nil {
-				return err
+				return fmt.Errorf("error saving file after replace: %w", err)
 			}
 			return nil
 		})

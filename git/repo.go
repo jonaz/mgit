@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/jonaz/mgit/utils"
-	"github.com/sirupsen/logrus"
 )
 
 type Repo struct {
@@ -21,8 +20,6 @@ func (repo Repo) WorkDir() string {
 }
 
 func Clone(repo, dstFolder string) (Repo, error) {
-	// GIT_SSH_COMMAND='ssh -i /Users/UR_USERNAME/.ssh/UR_PRIVATE_KEY'
-	logrus.Infof("clone git repo %s into %s ", repo, dstFolder)
 	out, err := utils.Run("git", "clone", "--depth", "1", repo, dstFolder)
 	if out != "" {
 		fmt.Println(out)
@@ -43,8 +40,7 @@ func (repo Repo) Add(file string) error {
 	return err
 }
 
-func (repo Repo) CommitAndPush(msg, author string) error {
-	logrus.Infof("commit in %s", repo.workdir)
+func (repo Repo) Commit(msg, author string) error {
 	var out string
 	var err error
 
@@ -68,7 +64,6 @@ func (repo Repo) Pull() error {
 }
 
 func (repo Repo) Push(upstreamURL string, force bool) error {
-	logrus.Infof("push in %s to %s ", repo.workdir, upstreamURL)
 	var err error
 	if force {
 		_, err = utils.Run("git", "-C", repo.workdir, "push", "--force", upstreamURL)

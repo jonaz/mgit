@@ -13,8 +13,10 @@ type Task struct {
 }
 
 type Action struct {
-	Command    string `yaml:"command"`
-	Regexp     string `yaml:"regexp"`
-	With       string `yaml:"with"`
-	FileRegexp string `yaml:"fileRegexp"`
+	Command       string   `yaml:"command"`
+	Regexp        string   `yaml:"regexp"`
+	With          string   `yaml:"with"`
+	FileRegexp    string   `yaml:"fileRegexp"`
+	PathRegexp    string   `yaml:"pathRegexp"`
+	ContentRegexp []string `yaml:"contentRegexp"`
 }

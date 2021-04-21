@@ -103,7 +103,7 @@ func main() {
 					if err != nil {
 						return err
 					}
-					return provider.Replace(c.String("regexp"), c.String("with"), c.String("file-regexp"))
+					return provider.Replace(c.String("regexp"), c.String("with"), c.String("file-regexp"), c.String("path-regexp"), nil)
 				},
 				Flags: []cli.Flag{
 					&cli.StringFlag{
@@ -117,6 +117,10 @@ func main() {
 					&cli.StringFlag{
 						Name:  "file-regexp",
 						Usage: "regexp to filter files",
+					},
+					&cli.StringFlag{
+						Name:  "path-regexp",
+						Usage: "regexp to filter files. includes full path from repo root",
 					},
 				},
 			},
