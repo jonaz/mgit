@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/jonaz/mgit/utils"
+	"github.com/sirupsen/logrus"
 )
 
 type Repo struct {
@@ -38,6 +39,23 @@ func (repo Repo) Add(file string) error {
 		fmt.Println(out)
 	}
 	return err
+}
+
+func (repo Repo) HasLocalChanges() (bool, error) {
+	out, err := utils.Run("git", "-C", repo.workdir, "status", "--porcelain")
+	return out != "", err
+}
+
+func (repo Repo) CommitIfLocalChanges(msg, author string) error {
+	localChanges, err := repo.HasLocalChanges()
+	if err != nil {
+		return err
+	}
+	if !localChanges {
+		logrus.Debug("skipping commit and push since repo is already up to date")
+		return nil
+	}
+	return repo.Commit(msg, author)
 }
 
 func (repo Repo) Commit(msg, author string) error {

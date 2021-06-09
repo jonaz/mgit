@@ -92,6 +92,24 @@ func runPlaybook(c *cli.Context) error {
 			}
 		}
 
+		provider.RepoURLWhitelist = []string{}
+		// ignore unchanged repos
+		err = eachRepoInPlay(provider, func(repo git.Repo) error {
+			hasChanges, err := repo.HasLocalChanges()
+			if err != nil {
+				return err
+			}
+
+			if hasChanges {
+				u, _ := repo.RemoteURL()
+				provider.RepoURLWhitelist = append(provider.RepoURLWhitelist, u)
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+
 		err = eachRepoInPlay(provider, func(repo git.Repo) error {
 			logrus.Infof("%s: create branch %s", repo.WorkDir(), task.TargetBranch)
 			return repo.Checkout(task.TargetBranch)
