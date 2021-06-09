@@ -46,7 +46,10 @@ func main() {
 					if err != nil {
 						return err
 					}
-					return provider.Clone(strings.Split(c.String("whitelist"), ","), c.String("has-file"))
+					whitelist := strings.FieldsFunc(c.String("whitelist"), func(c rune) bool {
+						return c == ','
+					})
+					return provider.Clone(whitelist, c.String("has-file"))
 				},
 				Flags: []cli.Flag{
 					&cli.StringFlag{
@@ -70,17 +73,6 @@ func main() {
 						return err
 					}
 					return provider.PR()
-				},
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:  "has-file",
-						Usage: "only clone repo which has file",
-					},
-
-					&cli.StringFlag{
-						Name:  "whitelist",
-						Usage: "only clone repos in comma separated list",
-					},
 				},
 			},
 			{
