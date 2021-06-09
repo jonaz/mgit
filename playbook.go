@@ -110,6 +110,10 @@ func runPlaybook(c *cli.Context) error {
 			return err
 		}
 
+		if len(newWhitelist) == 0 {
+			logrus.Info("found no changes in repos in current play. aborting")
+			return nil
+		}
 		provider.RepoURLWhitelist = newWhitelist
 
 		err = eachRepoInPlay(provider, func(repo git.Repo) error {
