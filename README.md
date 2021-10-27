@@ -48,3 +48,18 @@ tasks:
 
 run with `mgit playbook run playbook.yml`
 open multiple PRs when done: `mgit --bitbucket-url=https://bitbucketserver.com pr`
+
+
+## docs
+
+### actions
+
+| field | description|
+| --- | ----------- |
+| command | runs command in shell. cannot be used with regexp | 
+| regexp | |
+| with | what to replace matched regexp with. capture groups example $1 is supported |
+| fileRegexp | only change in files where the filename matches the regexp |
+| pathRegexp | only change files in matching path. Includes the full path from the repo root and not only the filename |
+| contentRegexp | only change in files which match this regexp. |
+
