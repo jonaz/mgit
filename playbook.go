@@ -179,6 +179,10 @@ func runAction(provider providers.Provider, action models.Action) error {
 		}
 	}
 	if action.Regexp == "" && action.Command != "" {
+		if len(action.ContentRegexp) > 0 || action.FileRegexp != "" || action.PathRegexp != "" {
+			return provider.CommandEachMatchingFile(action.Command, action.FileRegexp, action.PathRegexp, action.ContentRegexp)
+		}
+
 		err := eachRepoInPlay(provider, func(repo git.Repo) error {
 			logrus.Infof("%s: running command: %s", repo.WorkDir(), action.Command)
 			args := strings.Fields(action.Command)

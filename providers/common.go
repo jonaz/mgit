@@ -2,10 +2,14 @@ package providers
 
 import (
 	"fmt"
+	"html/template"
 	"io/fs"
 	"io/ioutil"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/jonaz/mgit/git"
 	"github.com/jonaz/mgit/utils"
@@ -22,6 +26,7 @@ type Provider interface {
 	Replace(regexp, with, fileRegexp, pathRegex string, contentRegex []string) error
 	ShouldProcessRepo(path string) (bool, error)
 	WorkDir() string
+	CommandEachMatchingFile(command, fileRegex, pathRegex string, contentRegex []string) error
 }
 
 func GetProvider(c *cli.Context) (Provider, error) {
@@ -171,6 +176,97 @@ func (d *DefaultProvider) Replace(regex, with, fileRegex, pathRegex string, cont
 				return fmt.Errorf("error saving file after replace: %w", err)
 			}
 			return nil
+		})
+	})
+}
+
+func (d *DefaultProvider) CommandEachMatchingFile(command, fileRegex, pathRegex string, contentRegex []string) error {
+	// TODO this is pretty similar to Replace. refactor!
+
+	fileReg, err := regexp.Compile(fileRegex)
+	if err != nil {
+		return err
+	}
+	pathReg, err := regexp.Compile(pathRegex)
+	if err != nil {
+		return err
+	}
+
+	contentReg := make([]*regexp.Regexp, len(contentRegex))
+	for i, s := range contentRegex {
+		reg, err := regexp.Compile(s)
+		if err != nil {
+			return err
+		}
+		contentReg[i] = reg
+	}
+
+	return utils.InEachRepo(d.Dir, func(repoPath string) error {
+		if ok, err := d.ShouldProcessRepo(repoPath); !ok {
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+		logrus.Infof("scanning repo for files to run command on: %s", repoPath)
+
+		return filepath.Walk(repoPath, func(path string, info fs.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+
+			if info.IsDir() && info.Name() == ".git" {
+				return filepath.SkipDir
+			}
+
+			if info.IsDir() {
+				return nil
+			}
+
+			if fileRegex != "" {
+				if !fileReg.MatchString(info.Name()) {
+					return nil
+				}
+			}
+			if pathRegex != "" {
+				if !pathReg.MatchString(path) {
+					return nil
+				}
+			}
+
+			logrus.Debugf("checking path %s for matching regexp", path)
+			read, err := ioutil.ReadFile(path)
+			if err != nil {
+				return err
+			}
+
+			for _, reg := range contentReg {
+				if !reg.Match(read) {
+					return nil
+				}
+			}
+
+			t := template.Must(template.New("name").Parse(command))
+			b := &strings.Builder{}
+			type cmdstruct struct {
+				FilePath string
+			}
+			relativePath, err := filepath.Rel(repoPath, path)
+			c := &cmdstruct{FilePath: relativePath}
+			err = t.Execute(b, c)
+			if err != nil {
+				return fmt.Errorf("error generating command argument template: %w", err)
+			}
+			command = b.String()
+			args := strings.Fields(command)
+
+			logrus.Infof("%s: running command: %s", repoPath, strings.Join(args, " "))
+			cmd := exec.Command(args[0], args[1:]...) // #nosec
+			cmd.Dir = repoPath
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			cmd.Stdin = os.Stdin
+			return cmd.Run()
 		})
 	})
 }
