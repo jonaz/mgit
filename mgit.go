@@ -72,7 +72,7 @@ func main() {
 					if err != nil {
 						return err
 					}
-					return provider.PR()
+					return provider.PR(nil)
 				},
 			},
 			{
@@ -135,6 +135,18 @@ func main() {
 						Name:   "run",
 						Usage:  "run a playbook with combined commands",
 						Action: runPlaybook,
+						Flags: []cli.Flag{
+							&cli.BoolFlag{
+								Name:  "force",
+								Usage: "force push new git branch",
+							},
+						},
+					},
+					{
+						Name:    "pull-request",
+						Aliases: []string{"pr"},
+						Usage:   "open PR in a new browser tab for each repo in the playbook",
+						Action:  openPR,
 						Flags: []cli.Flag{
 							&cli.BoolFlag{
 								Name:  "force",

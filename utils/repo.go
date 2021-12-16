@@ -3,6 +3,7 @@ package utils
 import (
 	"io/ioutil"
 	"path/filepath"
+	"strings"
 )
 
 func InEachRepo(dir string, fn func(path string) error) error {
@@ -29,4 +30,9 @@ func InSlice(files []string, filename string) bool {
 		}
 	}
 	return false
+}
+func RepoDir(workDir, repoURL string) string {
+	tmp := strings.Split(repoURL, "/")
+	dir := filepath.Join(workDir, tmp[len(tmp)-2]+"_"+tmp[len(tmp)-1])
+	return strings.TrimSuffix(dir, ".git")
 }

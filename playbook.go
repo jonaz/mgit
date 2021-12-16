@@ -4,7 +4,6 @@ import (
 	"errors"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"github.com/jonaz/mgit/git"
@@ -48,15 +47,20 @@ func generatePlaybook(c *cli.Context) error {
 	return yaml.NewEncoder(os.Stdout).Encode(p)
 }
 
-func runPlaybook(c *cli.Context) error {
-	file, err := os.Open(c.Args().First())
+func readFile(fn string) (*models.Playbook, error) {
+	file, err := os.Open(fn)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer file.Close()
 
 	p := &models.Playbook{}
 	err = yaml.NewDecoder(file).Decode(&p)
+	return p, err
+}
+
+func runPlaybook(c *cli.Context) error {
+	p, err := readFile(c.Args().First())
 	if err != nil {
 		return err
 	}
@@ -66,7 +70,7 @@ func runPlaybook(c *cli.Context) error {
 		provider := &providers.DefaultProvider{Dir: c.String("dir")}
 
 		for _, repoURL := range task.Repos {
-			dir := repoDir(c.String("dir"), repoURL)
+			dir := utils.RepoDir(c.String("dir"), repoURL)
 			logrus.Infof("clone %s into %s", repoURL, dir)
 			if _, err := os.Stat(dir); errors.Is(err, os.ErrNotExist) {
 				_, err := git.Clone(repoURL, dir)
@@ -165,10 +169,20 @@ func eachRepoInPlay(provider providers.Provider, cb func(repo git.Repo) error) e
 	})
 }
 
-func repoDir(workDir, repoURL string) string {
-	tmp := strings.Split(repoURL, "/")
-	dir := filepath.Join(workDir, tmp[len(tmp)-2]+"_"+tmp[len(tmp)-1])
-	return strings.TrimSuffix(dir, ".git")
+func openPR(c *cli.Context) error {
+	p, err := readFile(c.Args().First())
+	if err != nil {
+		return err
+	}
+	provider, err := providers.GetProvider(c)
+	if err != nil {
+		return err
+	}
+	repos := []string{}
+	for _, v := range p.Tasks {
+		repos = append(repos, v.Repos...)
+	}
+	return provider.PR(repos)
 }
 
 func runAction(provider providers.Provider, action models.Action) error {

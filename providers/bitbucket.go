@@ -87,11 +87,25 @@ func (b *Bitbucket) Clone(whitelist []string, hasFile string) error {
 	return nil
 }
 
-func (b *Bitbucket) PR() error {
-	return utils.InEachRepo(b.Dir, func(path string) error {
-		logrus.Info(path)
-		return openBitbucketPR(b.BitbucketURL, "", path)
-	})
+//PR opens PR for each repo in repos list. If list is zero it opens for each repo in the --dir path.
+func (b *Bitbucket) PR(repos []string) error {
+	if len(repos) == 0 {
+		return utils.InEachRepo(b.Dir, func(path string) error {
+			logrus.Info(path)
+			return openBitbucketPR(b.BitbucketURL, "", path)
+		})
+	}
+
+	var err error
+	for _, repo := range repos {
+		dir := utils.RepoDir(b.WorkDir(), repo)
+		err = openBitbucketPR(b.BitbucketURL, "", dir)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func openBitbucketPR(bitbucketURL, targetBranch, gitDir string) error {

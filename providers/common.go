@@ -22,7 +22,7 @@ var ErrNoProviderFound = fmt.Errorf("no provider found")
 type Provider interface {
 	Clone(whitelist []string, hasFile string) error
 	Git(args []string) error
-	PR() error
+	PR(repos []string) error
 	Replace(regexp, with, fileRegexp, pathRegex string, contentRegex []string) error
 	ShouldProcessRepo(path string) (bool, error)
 	WorkDir() string
@@ -53,7 +53,7 @@ func (d *DefaultProvider) Clone(whitelist []string, hasFile string) error {
 	return fmt.Errorf("clone is not defined in this provider. Set --<provider>-url flag")
 }
 
-func (d *DefaultProvider) PR() error {
+func (d *DefaultProvider) PR(repos []string) error {
 	return fmt.Errorf("prd is not defined in this provider. Set --<provider>-url flag")
 }
 
@@ -252,13 +252,16 @@ func (d *DefaultProvider) CommandEachMatchingFile(command, fileRegex, pathRegex 
 				FilePath string
 			}
 			relativePath, err := filepath.Rel(repoPath, path)
+			if err != nil {
+				return err
+			}
+
 			c := &cmdstruct{FilePath: relativePath}
 			err = t.Execute(b, c)
 			if err != nil {
 				return fmt.Errorf("error generating command argument template: %w", err)
 			}
-			command = b.String()
-			args := strings.Fields(command)
+			args := strings.Fields(b.String())
 
 			logrus.Infof("%s: running command: %s", repoPath, strings.Join(args, " "))
 			cmd := exec.Command(args[0], args[1:]...) // #nosec
