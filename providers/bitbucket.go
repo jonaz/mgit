@@ -60,7 +60,7 @@ func (b *Bitbucket) Clone(whitelist []string, hasFile string) error {
 				logrus.Infof("cloning repo %s", repo.Name)
 				_, err := git.Clone(repo.Links.Clone.GetSSH(), repo.RepoPath(b.Dir))
 				if err != nil {
-					logrus.Error(err)
+					logrus.Errorf("%s: %s", repo.Name, err.Error())
 				}
 
 				continue
@@ -69,14 +69,14 @@ func (b *Bitbucket) Clone(whitelist []string, hasFile string) error {
 			if hasFile != "" {
 				files, err := bit.ListFiles(project.Key, repo.Slug)
 				if err != nil {
-					logrus.Error(err)
+					logrus.Errorf("%s: %s", repo.Name, err)
 					continue
 				}
 				if utils.InSlice(files.Values, hasFile) {
 					logrus.Infof("cloning repo %s", repo.Name)
 					_, err := git.Clone(repo.Links.Clone.GetSSH(), repo.RepoPath(b.Dir))
 					if err != nil {
-						logrus.Error(err)
+						logrus.Errorf("%s: %s", repo.Name, err.Error())
 					}
 				}
 				continue
@@ -87,7 +87,7 @@ func (b *Bitbucket) Clone(whitelist []string, hasFile string) error {
 	return nil
 }
 
-//PR opens PR for each repo in repos list. If list is zero it opens for each repo in the --dir path.
+// PR opens PR for each repo in repos list. If list is zero it opens for each repo in the --dir path.
 func (b *Bitbucket) PR(repos []string) error {
 	if len(repos) == 0 {
 		return utils.InEachRepo(b.Dir, func(path string) error {

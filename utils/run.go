@@ -2,9 +2,10 @@ package utils
 
 import (
 	"bytes"
-	"errors"
+	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/fatih/color"
 )
@@ -26,7 +27,7 @@ func Run(head string, parts ...string) (string, error) {
 	cmd.Stderr = &stderr
 	err = cmd.Run()
 	if err != nil {
-		return stdout.String(), errors.New(err.Error() + stderr.String())
+		return stdout.String(), fmt.Errorf("run %s %s error: %w stderr: %s stdout: %s", head, strings.Join(parts, " "), err, stderr.String(), stdout.String())
 	}
 	return stdout.String(), nil
 }
