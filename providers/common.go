@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/google/shlex"
 	"github.com/jonaz/mgit/git"
 	"github.com/jonaz/mgit/utils"
 	"github.com/sirupsen/logrus"
@@ -261,7 +262,10 @@ func (d *DefaultProvider) CommandEachMatchingFile(command, fileRegex, pathRegex 
 			if err != nil {
 				return fmt.Errorf("error generating command argument template: %w", err)
 			}
-			args := strings.Fields(b.String())
+			args, err := shlex.Split(b.String())
+			if err != nil {
+				return err
+			}
 
 			logrus.Infof("%s: running command: %s", repoPath, strings.Join(args, " "))
 			cmd := exec.Command(args[0], args[1:]...) // #nosec

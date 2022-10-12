@@ -56,7 +56,7 @@ open multiple PRs when done: `mgit --bitbucket-url=https://bitbucketserver.com p
 
 | field | description|
 | --- | ----------- |
-| command | runs command in shell. cannot be used with regexp | 
+| command | runs command in shell. cannot be used with regexp. If used together with contentRegexp|fileRegexp|pathRegexp it invoke the command per file found with {{.FilePath}} | 
 | regexp | |
 | with | what to replace matched regexp with. capture groups example $1 is supported |
 | fileRegexp | only change in files where the filename matches the regexp |

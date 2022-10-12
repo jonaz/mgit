@@ -4,8 +4,8 @@ import (
 	"errors"
 	"os"
 	"os/exec"
-	"strings"
 
+	"github.com/google/shlex"
 	"github.com/jonaz/mgit/git"
 	"github.com/jonaz/mgit/models"
 	"github.com/jonaz/mgit/providers"
@@ -199,7 +199,10 @@ func runAction(provider providers.Provider, action models.Action) error {
 
 		err := eachRepoInPlay(provider, func(repo git.Repo) error {
 			logrus.Infof("%s: running command: %s", repo.WorkDir(), action.Command)
-			args := strings.Fields(action.Command)
+			args, err := shlex.Split(action.Command)
+			if err != nil {
+				return err
+			}
 			cmd := exec.Command(args[0], args[1:]...) // #nosec
 			cmd.Dir = repo.WorkDir()
 			cmd.Stdout = os.Stdout

@@ -9,6 +9,7 @@ require (
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/fortnoxab/ginprometheus v0.0.0-20191128103726-180dc37662d8
 	github.com/gin-gonic/gin v1.6.3
+	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/jonaz/ginlogrus v0.0.0-20191118094232-2f4da50f5dd6
 	github.com/jonaz/gograce v0.5.0
 	github.com/koding/multiconfig v0.0.0-20171124222453-69c27309b2d7
