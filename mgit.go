@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jonaz/mgit/models"
-	"github.com/jonaz/mgit/providers"
+	"github.com/jonaz/mgit/pkg/models"
+	"github.com/jonaz/mgit/pkg/providers"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
@@ -49,17 +49,20 @@ func main() {
 					whitelist := strings.FieldsFunc(c.String("whitelist"), func(c rune) bool {
 						return c == ','
 					})
-					return provider.Clone(whitelist, c.String("has-file"))
+					return provider.Clone(whitelist, c.String("has-file"), c.String("content-regexp"))
 				},
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:  "has-file",
 						Usage: "only clone repo which has file",
 					},
-
 					&cli.StringFlag{
 						Name:  "whitelist",
 						Usage: "only clone repos in comma separated list",
+					},
+					&cli.StringFlag{
+						Name:  "content-regexp",
+						Usage: "only clone repos where has-file contains data that matches the regexp",
 					},
 				},
 			},
@@ -72,7 +75,14 @@ func main() {
 					if err != nil {
 						return err
 					}
-					return provider.PR(nil)
+					return provider.PR(nil, c.String("mode"))
+				},
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "mode",
+						Usage: "open PR with 'api' or 'browser'",
+						Value: "browser",
+					},
 				},
 			},
 			{
@@ -148,9 +158,10 @@ func main() {
 						Usage:   "open PR in a new browser tab for each repo in the playbook",
 						Action:  openPR,
 						Flags: []cli.Flag{
-							&cli.BoolFlag{
-								Name:  "force",
-								Usage: "force push new git branch",
+							&cli.StringFlag{
+								Name:  "mode",
+								Usage: "open PR with 'api' or 'browser'",
+								Value: "browser",
 							},
 						},
 					},

@@ -12,8 +12,8 @@ import (
 	"strings"
 
 	"github.com/google/shlex"
-	"github.com/jonaz/mgit/git"
-	"github.com/jonaz/mgit/utils"
+	"github.com/jonaz/mgit/pkg/git"
+	"github.com/jonaz/mgit/pkg/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
@@ -21,9 +21,9 @@ import (
 var ErrNoProviderFound = fmt.Errorf("no provider found")
 
 type Provider interface {
-	Clone(whitelist []string, hasFile string) error
+	Clone(whitelist []string, hasFile, contentRegex string) error
 	Git(args []string) error
-	PR(repos []string) error
+	PR(repos []string, prMode string) error
 	Replace(regexp, with, fileRegexp, pathRegex string, contentRegex []string) error
 	ShouldProcessRepo(path string) (bool, error)
 	WorkDir() string
@@ -50,11 +50,11 @@ func (d *DefaultProvider) WorkDir() string {
 	return d.Dir
 }
 
-func (d *DefaultProvider) Clone(whitelist []string, hasFile string) error {
+func (d *DefaultProvider) Clone(whitelist []string, hasFile, contentRegex string) error {
 	return fmt.Errorf("clone is not defined in this provider. Set --<provider>-url flag")
 }
 
-func (d *DefaultProvider) PR(repos []string) error {
+func (d *DefaultProvider) PR(repos []string, prMode string) error {
 	return fmt.Errorf("prd is not defined in this provider. Set --<provider>-url flag")
 }
 

@@ -3,7 +3,7 @@ package git
 import (
 	"strings"
 
-	"github.com/jonaz/mgit/utils"
+	"github.com/jonaz/mgit/pkg/utils"
 )
 
 type Tag struct {

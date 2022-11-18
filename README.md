@@ -1,6 +1,12 @@
 # mgit
 Multi repo edit/commit/pr tool
 
+## Install
+
+```
+go install github.com/jonaz/mgit@latest
+```
+
 ## Example usage
 
 there are help for all command and subcommands
