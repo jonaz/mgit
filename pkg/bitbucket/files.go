@@ -1,4 +1,4 @@
-package models
+package bitbucket
 
 type Files struct {
 	Values        []string `json:"values"`

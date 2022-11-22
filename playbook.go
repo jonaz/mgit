@@ -6,10 +6,10 @@ import (
 	"os/exec"
 
 	"github.com/google/shlex"
-	"github.com/jonaz/mgit/git"
-	"github.com/jonaz/mgit/models"
-	"github.com/jonaz/mgit/providers"
-	"github.com/jonaz/mgit/utils"
+	"github.com/jonaz/mgit/pkg/git"
+	"github.com/jonaz/mgit/pkg/models"
+	"github.com/jonaz/mgit/pkg/providers"
+	"github.com/jonaz/mgit/pkg/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"gopkg.in/yaml.v3"
@@ -182,7 +182,7 @@ func openPR(c *cli.Context) error {
 	for _, v := range p.Tasks {
 		repos = append(repos, v.Repos...)
 	}
-	return provider.PR(repos)
+	return provider.PR(repos, c.String("mode"))
 }
 
 func runAction(provider providers.Provider, action models.Action) error {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jonaz/mgit/utils"
+	"github.com/jonaz/mgit/pkg/utils"
 	"github.com/sirupsen/logrus"
 )
 
