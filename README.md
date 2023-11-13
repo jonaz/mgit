@@ -56,6 +56,16 @@ run with `mgit playbook run playbook.yml`
 open multiple PRs when done: `mgit --bitbucket-url=https://bitbucketserver.com pr`
 
 
+
+### example to clone repos containing content
+```
+mgit -c https://git.domain clone --has-file config.json --content-regexp '"team": "mycoolteam"'
+mgit -c https://git.domain playbook generate
+# edit the playbook
+mgit -c https://git.domain playbook run playbook.yml
+mgit -c https://git.domain playbook pr --mode api playbook.yml
+```
+
 ## docs
 
 ### actions
