@@ -50,4 +50,14 @@ type WebhookEvent struct {
 			} `json:"self"`
 		} `json:"links"`
 	} `json:"pullRequest"`
+	PreviousTitle       string `json:"previousTitle"`
+	PreviousDescription string `json:"previousDescription"`
+	PreviousDraft       bool   `json:"previousDraft"`
+	PreviousTarget      struct {
+		ID              string `json:"id"`
+		DisplayID       string `json:"displayId"`
+		Type            string `json:"type"`
+		LatestCommit    string `json:"latestCommit"`
+		LatestChangeset string `json:"latestChangeset"`
+	} `json:"previousTarget"`
 }
